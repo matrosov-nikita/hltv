@@ -41,8 +41,8 @@ func NewTeamFilter(filter MatchesFilter, team string) MatchesFilter {
 
 func (f *TeamFilter) TakeMatch(m Match) bool {
 	return f.filter.TakeMatch(m) &&
-		strings.Contains(strings.ToLower(m.FirstTeam), f.team) ||
-		strings.Contains(strings.ToLower(m.SecondTeam), f.team)
+		(strings.Contains(strings.ToLower(m.FirstTeam), f.team) ||
+			strings.Contains(strings.ToLower(m.SecondTeam), f.team))
 }
 
 type TakeEveryMatchFilter struct{}
