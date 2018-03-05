@@ -15,12 +15,12 @@ func main() {
 	flag.Parse()
 
 	parser := NewParser(http.DefaultClient)
-	_, err := parser.FetchMatches()
+	matches, err := parser.FetchMatches()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	var filter MatchesFilter = parser
+	var filter MatchesFilter = &TakeEveryMatchFilter{}
 
 	if *onlyStarred {
 		filter = NewStarredFilter(filter)
@@ -30,12 +30,13 @@ func main() {
 		filter = NewFilterTodayMatches(filter)
 	}
 
-	team := *onlyForTeam
-	if len(team) > 0 {
-		filter = NewTeamFilter(filter, team)
+	if len(*onlyForTeam) > 0 {
+		filter = NewTeamFilter(filter, *onlyForTeam)
 	}
 
-	for _, m := range filter.getMatches() {
-		fmt.Println(m.String())
+	for _, m := range matches {
+		if filter.TakeMatch(m) {
+			fmt.Println(m.String())
+		}
 	}
 }

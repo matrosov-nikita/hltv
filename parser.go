@@ -33,7 +33,6 @@ func (p *Parser) loadHltvPage() (io.ReadCloser, error) {
 	}
 
 	return resp.Body, nil
-
 }
 
 func (p *Parser) FetchMatches() ([]Match, error) {
@@ -44,32 +43,44 @@ func (p *Parser) FetchMatches() ([]Match, error) {
 
 	defer hltvContent.Close()
 
-	// TODO: how to meake this error happen?
 	doc, _ := goquery.NewDocumentFromReader(hltvContent)
-	p.getMatchesBody(doc).Each(p.parseMatch)
+
+	p.getMatchesDocuments(doc).Each(func(i int, doc *goquery.Selection) {
+		p.matches = append(p.matches, newMatchParser(doc).Parse())
+	})
+
 	return p.matches, nil
 }
 
-func (p *Parser) getMatchesBody(doc *goquery.Document) *goquery.Selection {
+func (p *Parser) getMatchesDocuments(doc *goquery.Document) *goquery.Selection {
 	return doc.Find(".upcoming-matches .match-day > a")
 }
 
-func (p *Parser) parseMatch(i int, match *goquery.Selection) {
-	m := Match{}
-	m.Link, _ = match.Attr("href")
-
-	teams := match.Find(".team")
-	m.FirstTeam = teams.Eq(0).Text()
-	m.SecondTeam = teams.Eq(1).Text()
-
-	t, _ := match.Find("div.time").Attr("data-unix")
-	unixMs, _ := strconv.ParseInt(t, 10, 64)
-	m.Time = time.Unix(unixMs/1000, 0)
-
-	m.Stars = match.Find("div.stars").Children().Length()
-	p.matches = append(p.matches, m)
+type matchParser struct {
+	doc *goquery.Selection
 }
 
-func (p *Parser) getMatches() []Match {
-	return p.matches
+func newMatchParser(doc *goquery.Selection) *matchParser {
+	return &matchParser{doc: doc}
+}
+
+func (p *matchParser) Parse() Match {
+	link, _ := p.doc.Attr("href")
+
+	firstTeam, secondTeam := p.parseTeams()
+	unixTime := p.parseTime()
+	stars := p.doc.Find("div.stars").Children().Length()
+
+	return NewMatch(firstTeam, secondTeam, link, stars, unixTime)
+}
+
+func (p *matchParser) parseTeams() (string, string) {
+	teams := p.doc.Find(".team")
+	return teams.Eq(0).Text(), teams.Eq(1).Text()
+}
+
+func (p *matchParser) parseTime() time.Time {
+	t, _ := p.doc.Find("div.time").Attr("data-unix")
+	unixMs, _ := strconv.ParseInt(t, 10, 64)
+	return time.Unix(unixMs/1000, 0)
 }

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,11 +19,7 @@ type ParserSuite struct {
 }
 
 func (s *ParserSuite) SetupTest() {
-	f, err := os.Open("./hltv_fixture.html")
-	if err != nil {
-		panic(err)
-	}
-	response := &SpyHTTPBody{Reader: f}
+	response := &SpyHTTPBody{Reader: strings.NewReader(rawHTMLMatches)}
 	s.client = &SpyHTTPClient{code: http.StatusOK, response: response}
 	s.parser = NewParser(s.client)
 }
@@ -117,3 +113,121 @@ func (b *SpyHTTPBody) Close() error {
 	b.closeCalled = true
 	return nil
 }
+
+var rawHTMLMatches = `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  </head>
+  <body>
+    <div class="upcoming-matches">
+      <div class="" data-zonedgrouping-headline-format="YYYY-MM-dd" data-zonedgrouping-headline-classes="standard-headline" data-zonedgrouping-group-classes="match-day">
+          <div class="match-day">
+              <span class="standard-headline">2018-03-04</span>
+              <a href="/testmatch1" class="a-reset block upcoming-match standard-box" data-zonedgrouping-entry-unix="1520168400000">
+                <table class="table">
+                  <tr>
+                    <td class="time">
+                      <div class="time" data-time-format="HH:mm" data-unix="1520168400000">14:00</div>
+                    </td>
+                    <td class="team-cell">
+                      <div class="line-align"><img alt="eXtatus" src="https://static.hltv.org/images/team/logo/6745" class="logo" title="eXtatus">
+                        <div class="team">eXtatus</div>
+                      </div>
+                    </td>
+                    <td class="vs">vs</td>
+                    <td class="team-cell">
+                      <div class="line-align"><img alt="Unity" src="https://static.hltv.org/images/team/logo/7058" class="logo" title="Unity">
+                        <div class="team">Unity</div>
+                      </div>
+                    </td>
+                    <td class="event"><img alt="X-BET.co Invitational 2" src="https://static.hltv.org/images/eventLogos/3585.png" class="event-logo" title="X-BET.co Invitational 2"><span class="event-name">X-BET.co Invitational 2</span></td>
+                    <td class="star-cell">
+                      <div class="map-text">bo3</div>
+                    </td>
+                  </tr>
+                </table>
+              </a><a href="/testmatch2" class="a-reset block upcoming-match standard-box" data-zonedgrouping-entry-unix="1520172000000">
+                <table class="table">
+                  <tr>
+                    <td class="time">
+                      <div class="time" data-time-format="HH:mm" data-unix="1520172000000">15:00</div>
+                    </td>
+                    <td class="team-cell">
+                      <div class="line-align"><img alt="GoodJob" src="https://static.hltv.org/images/team/logo/7820" class="logo" title="GoodJob">
+                        <div class="team">GoodJob</div>
+                      </div>
+                    </td>
+                    <td class="vs">vs</td>
+                    <td class="team-cell">
+                      <div class="line-align"><img alt="DreamEaters" src="https://static.hltv.org/images/team/logo/8305" class="logo" title="DreamEaters">
+                        <div class="team">DreamEaters</div>
+                      </div>
+                    </td>
+                    <td class="event"><img alt="M.Game League " src="https://static.hltv.org/images/eventLogos/3581.png" class="event-logo" title="M.Game League "><span class="event-name">M.Game League </span></td>
+                    <td class="star-cell">
+                        <div class="map-and-stars">
+                            <div class="stars"><i class="fa fa-star star"></i><i class="fa fa-star star"></i><i class="fa fa-star star"></i><i class="fa fa-star star"></i><i class="fa fa-star star"></i></div>
+                            <div class="map map-text">bo5</div>
+                        </div>
+                    </td>
+                  </tr>
+                </table>
+              </a></div>
+          <div class="match-day">
+                  <span class="standard-headline">2018-03-05</span>
+                  <a href="/testmatch1" class="a-reset block upcoming-match standard-box" data-zonedgrouping-entry-unix="1520168400000">
+                    <table class="table">
+                      <tr>
+                        <td class="time">
+                          <div class="time" data-time-format="HH:mm" data-unix="1520168400000">14:00</div>
+                        </td>
+                        <td class="team-cell">
+                          <div class="line-align"><img alt="eXtatus" src="https://static.hltv.org/images/team/logo/6745" class="logo" title="eXtatus">
+                            <div class="team">eXtatus</div>
+                          </div>
+                        </td>
+                        <td class="vs">vs</td>
+                        <td class="team-cell">
+                          <div class="line-align"><img alt="Unity" src="https://static.hltv.org/images/team/logo/7058" class="logo" title="Unity">
+                            <div class="team">Unity</div>
+                          </div>
+                        </td>
+                        <td class="event"><img alt="X-BET.co Invitational 2" src="https://static.hltv.org/images/eventLogos/3585.png" class="event-logo" title="X-BET.co Invitational 2"><span class="event-name">X-BET.co Invitational 2</span></td>
+                        <td class="star-cell">
+                          <div class="map-text">bo3</div>
+                        </td>
+                      </tr>
+                    </table>
+                  </a><a href="/testmatch2" class="a-reset block upcoming-match standard-box" data-zonedgrouping-entry-unix="1520172000000">
+                    <table class="table">
+                      <tr>
+                        <td class="time">
+                          <div class="time" data-time-format="HH:mm" data-unix="1520172000000">15:00</div>
+                        </td>
+                        <td class="team-cell">
+                          <div class="line-align"><img alt="GoodJob" src="https://static.hltv.org/images/team/logo/7820" class="logo" title="GoodJob">
+                            <div class="team">GoodJob</div>
+                          </div>
+                        </td>
+                        <td class="vs">vs</td>
+                        <td class="team-cell">
+                          <div class="line-align"><img alt="DreamEaters" src="https://static.hltv.org/images/team/logo/8305" class="logo" title="DreamEaters">
+                            <div class="team">DreamEaters</div>
+                          </div>
+                        </td>
+                        <td class="event"><img alt="M.Game League " src="https://static.hltv.org/images/eventLogos/3581.png" class="event-logo" title="M.Game League "><span class="event-name">M.Game League </span></td>
+                        <td class="star-cell">
+                            <div class="map-and-stars">
+                                <div class="stars"><i class="fa fa-star star"></i><i class="fa fa-star star"></i><i class="fa fa-star star"></i><i class="fa fa-star star"></i><i class="fa fa-star star"></i></div>
+                                <div class="map map-text">bo5</div>
+                            </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </a></div>
+      </div>
+    </div>
+</body>
+</html>
+`

@@ -3,7 +3,7 @@ package main
 import "strings"
 
 type MatchesFilter interface {
-	getMatches() []Match
+	TakeMatch(m Match) bool
 }
 
 type FilterTodayMatches struct {
@@ -14,16 +14,8 @@ func NewFilterTodayMatches(filter MatchesFilter) MatchesFilter {
 	return &FilterTodayMatches{filter}
 }
 
-func (f *FilterTodayMatches) getMatches() []Match {
-	var todayMatches []Match
-
-	for _, match := range f.filter.getMatches() {
-		if match.IsToday() {
-			todayMatches = append(todayMatches, match)
-		}
-	}
-
-	return todayMatches
+func (f *FilterTodayMatches) TakeMatch(m Match) bool {
+	return f.filter.TakeMatch(m) && m.IsToday()
 }
 
 type StarredFilter struct {
@@ -34,16 +26,8 @@ func NewStarredFilter(filter MatchesFilter) MatchesFilter {
 	return &StarredFilter{filter}
 }
 
-func (f *StarredFilter) getMatches() []Match {
-	var starredMatches []Match
-
-	for _, match := range f.filter.getMatches() {
-		if match.Stars > 0 {
-			starredMatches = append(starredMatches, match)
-		}
-	}
-
-	return starredMatches
+func (f *StarredFilter) TakeMatch(m Match) bool {
+	return f.filter.TakeMatch(m) && m.Stars > 0
 }
 
 type TeamFilter struct {
@@ -55,15 +39,12 @@ func NewTeamFilter(filter MatchesFilter, team string) MatchesFilter {
 	return &TeamFilter{filter: filter, team: strings.ToLower(team)}
 }
 
-func (f *TeamFilter) getMatches() []Match {
-	var matchesForTeam []Match
-
-	for _, match := range f.filter.getMatches() {
-		if strings.Contains(strings.ToLower(match.FirstTeam), f.team) ||
-			strings.Contains(strings.ToLower(match.SecondTeam), f.team) {
-			matchesForTeam = append(matchesForTeam, match)
-		}
-	}
-
-	return matchesForTeam
+func (f *TeamFilter) TakeMatch(m Match) bool {
+	return f.filter.TakeMatch(m) &&
+		strings.Contains(strings.ToLower(m.FirstTeam), f.team) ||
+		strings.Contains(strings.ToLower(m.SecondTeam), f.team)
 }
+
+type TakeEveryMatchFilter struct{}
+
+func (f *TakeEveryMatchFilter) TakeMatch(m Match) bool { return true }

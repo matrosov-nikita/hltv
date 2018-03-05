@@ -10,44 +10,56 @@ import (
 type MatchesFilterSuite struct {
 	suite.Suite
 
-	filterStub *MatchesFilterStub
+	todayMatch         Match
+	yesterdayMatch     Match
+	starredMatch       Match
+	takeEveryMatchStub *TakeEveryMatchFilter
 }
 
 func (s *MatchesFilterSuite) SetupTest() {
-	s.filterStub = &MatchesFilterStub{}
+	s.takeEveryMatchStub = &TakeEveryMatchFilter{}
+	s.todayMatch = NewMatch("first", "second", "/link", 0, time.Now())
+	s.yesterdayMatch = NewMatch("first", "second", "/link", 0, time.Now().Add(-24*time.Hour))
+	s.starredMatch = NewMatch("first", "second", "/link", 5, time.Now())
 }
 
-func (s MatchesFilterSuite) TestFilterReturnsTodayMatches() {
-	matches := NewFilterTodayMatches(s.filterStub).getMatches()
-	s.Len(matches, 3)
+func (s MatchesFilterSuite) TestTodayFilterTakeTodayMatches() {
+	s.True(NewFilterTodayMatches(s.takeEveryMatchStub).TakeMatch(s.todayMatch))
 }
 
-func (s MatchesFilterSuite) TestFilterReturnsStarredMatches() {
-	matches := NewStarredFilter(s.filterStub).getMatches()
-	s.Len(matches, 3)
+func (s MatchesFilterSuite) TestTodayFilterSkipNotTodayMatches() {
+	s.False(NewFilterTodayMatches(s.takeEveryMatchStub).TakeMatch(s.yesterdayMatch))
 }
 
-func (s MatchesFilterSuite) TestFilterReturnsMatchesByTeam() {
-	matches := NewTeamFilter(s.filterStub, "faze").getMatches()
-	s.Len(matches, 1)
-	s.Equal(matches[0].FirstTeam, "FaZe")
+func (s MatchesFilterSuite) TestStarredFilterSkipUnstarredMatches() {
+	unstarredMatch := s.todayMatch
+	s.False(NewStarredFilter(s.takeEveryMatchStub).TakeMatch(unstarredMatch))
+}
+
+func (s MatchesFilterSuite) TestStarredFilterTakeAllStarredMatches() {
+	s.True(NewStarredFilter(s.takeEveryMatchStub).TakeMatch(s.starredMatch))
+}
+
+func (s MatchesFilterSuite) TestTeamFilterSkipUknownTeam() {
+	s.False(NewTeamFilter(s.takeEveryMatchStub, "team").TakeMatch(s.todayMatch))
+}
+
+func (s MatchesFilterSuite) TestTeamFilterTakeMatchWithGivenTeam() {
+	s.True(NewTeamFilter(s.takeEveryMatchStub, "first").TakeMatch(s.todayMatch))
+	s.True(NewTeamFilter(s.takeEveryMatchStub, "second").TakeMatch(s.todayMatch))
+}
+
+func (s MatchesFilterSuite) TestFiltersAlreadySkippedMatches() {
+	skip := &RejectingFilterStub{}
+	s.False(NewFilterTodayMatches(skip).TakeMatch(s.todayMatch))
+	s.False(NewStarredFilter(skip).TakeMatch(s.todayMatch))
+	s.False(NewTeamFilter(skip, "team").TakeMatch(s.todayMatch))
 }
 
 func TestMatchesFilterSuite(t *testing.T) {
 	suite.Run(t, new(MatchesFilterSuite))
 }
 
-type MatchesFilterStub struct{}
+type RejectingFilterStub struct{}
 
-func (f *MatchesFilterStub) getMatches() []Match {
-	today := time.Now()
-	yesterday := time.Now().Add(-time.Hour * 24)
-
-	return []Match{
-		NewMatch("first", "second", "/link", 0, today),
-		NewMatch("third", "fourth", "/link", 5, yesterday),
-		NewMatch("FaZe", "Navi", "/link", 1, today),
-		NewMatch("first", "second", "/link", 5, yesterday),
-		NewMatch("first", "second", "/link", 0, today),
-	}
-}
+func (f *RejectingFilterStub) TakeMatch(m Match) bool { return false }
