@@ -45,7 +45,7 @@ func (s *ParserSuite) TestParserReturnErrorWhenClientFails() {
 
 func (s *ParserSuite) TestQueryBuildedProperly() {
 	s.parser.FetchMatches()
-	s.Equal("https://www.hltv.org/matches", s.client.url)
+	s.Equal(HLTVMatchPage, s.client.url)
 }
 
 func (s *ParserSuite) TestParserClosesResponse() {

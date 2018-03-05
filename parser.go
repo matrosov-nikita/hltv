@@ -10,49 +10,50 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-var ErrCannotGetHltv = errors.New("hltv returned error")
+const HLTVMatchPage = "https://www.hltv.org/matches"
+
+var ErrCannotLoadMatchesPage = errors.New("cannot load matches page")
+
+type HTTPClient interface {
+	Get(url string) (*http.Response, error)
+}
 
 type Parser struct {
 	client HTTPClient
-
-	matches []Match
-}
-
-type HTTPClient interface {
-	Get(url string) (resp *http.Response, err error)
 }
 
 func NewParser(client HTTPClient) *Parser {
 	return &Parser{client: client}
 }
 
-func (p *Parser) loadHltvPage() (io.ReadCloser, error) {
-	resp, err := p.client.Get("https://www.hltv.org/matches")
+func (p *Parser) FetchMatches() ([]Match, error) {
+	matchesPage, err := p.loadHLTVMatchesPage()
+	if err != nil {
+		return nil, err
+	}
+
+	defer matchesPage.Close()
+
+	var matches []Match
+
+	p.getMatchesHTML(matchesPage).Each(func(i int, matchHTML *goquery.Selection) {
+		matches = append(matches, newMatchParser(matchHTML).Parse())
+	})
+
+	return matches, nil
+}
+
+func (p *Parser) loadHLTVMatchesPage() (io.ReadCloser, error) {
+	resp, err := p.client.Get(HLTVMatchPage)
 	if err != nil || resp.StatusCode != http.StatusOK {
-		return nil, ErrCannotGetHltv
+		return nil, ErrCannotLoadMatchesPage
 	}
 
 	return resp.Body, nil
 }
 
-func (p *Parser) FetchMatches() ([]Match, error) {
-	hltvContent, err := p.loadHltvPage()
-	if err != nil {
-		return nil, err
-	}
-
-	defer hltvContent.Close()
-
-	doc, _ := goquery.NewDocumentFromReader(hltvContent)
-
-	p.getMatchesDocuments(doc).Each(func(i int, doc *goquery.Selection) {
-		p.matches = append(p.matches, newMatchParser(doc).Parse())
-	})
-
-	return p.matches, nil
-}
-
-func (p *Parser) getMatchesDocuments(doc *goquery.Document) *goquery.Selection {
+func (p *Parser) getMatchesHTML(page io.Reader) *goquery.Selection {
+	doc, _ := goquery.NewDocumentFromReader(page)
 	return doc.Find(".upcoming-matches .match-day > a")
 }
 
@@ -65,21 +66,25 @@ func newMatchParser(doc *goquery.Selection) *matchParser {
 }
 
 func (p *matchParser) Parse() Match {
-	link, _ := p.doc.Attr("href")
-
-	firstTeam, secondTeam := p.parseTeams()
-	unixTime := p.parseTime()
-	stars := p.doc.Find("div.stars").Children().Length()
-
-	return NewMatch(firstTeam, secondTeam, link, stars, unixTime)
+	firstTeam, secondTeam := p.Teams()
+	return NewMatch(firstTeam, secondTeam, p.Link(), p.Stars(), p.Time())
 }
 
-func (p *matchParser) parseTeams() (string, string) {
+func (p *matchParser) Link() string {
+	link, _ := p.doc.Attr("href")
+	return link
+}
+
+func (p *matchParser) Stars() int {
+	return p.doc.Find("div.stars").Children().Length()
+}
+
+func (p *matchParser) Teams() (string, string) {
 	teams := p.doc.Find(".team")
 	return teams.Eq(0).Text(), teams.Eq(1).Text()
 }
 
-func (p *matchParser) parseTime() time.Time {
+func (p *matchParser) Time() time.Time {
 	t, _ := p.doc.Find("div.time").Attr("data-unix")
 	unixMs, _ := strconv.ParseInt(t, 10, 64)
 	return time.Unix(unixMs/1000, 0)
