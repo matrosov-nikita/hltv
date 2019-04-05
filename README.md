@@ -1,4 +1,4 @@
-#HLTV
+# HLTV
 
 CLI tool for parsing upcoming CS:GO matches using special filters.
 
