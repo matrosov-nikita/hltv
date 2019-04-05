@@ -26,13 +26,19 @@ func NewParser(client HTTPClient) *Parser {
 	return &Parser{client: client}
 }
 
+// FetchMatches parses hltv.org page and returns list of matches.
 func (p *Parser) FetchMatches() ([]Match, error) {
 	matchesPage, err := p.loadHLTVMatchesPage()
 	if err != nil {
 		return nil, err
 	}
 
-	defer matchesPage.Close()
+	defer func() {
+		rerr := matchesPage.Close()
+		if rerr != nil {
+			err = rerr
+		}
+	}()
 
 	var matches []Match
 

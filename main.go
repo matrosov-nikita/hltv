@@ -4,17 +4,18 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 )
 
 func main() {
-
 	onlyStarred := flag.Bool("starred", false, "Show only starred matches")
 	onlyToday := flag.Bool("today", false, "Show only today matches")
 	onlyForTeam := flag.String("team", "", "Show only for given team")
 	flag.Parse()
 
-	parser := NewParser(http.DefaultClient)
+	parser := NewParser(NewClientWithHeaders(map[string]string{
+		"User-Agent": "bot",
+	}))
+
 	matches, err := parser.FetchMatches()
 	if err != nil {
 		log.Fatalln(err)

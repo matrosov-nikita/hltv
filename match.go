@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// Match represents math from hltv.org site.
 type Match struct {
 	FirstTeam  string
 	SecondTeam string
@@ -28,6 +29,7 @@ func cutLongTeamName(team string) string {
 	return team
 }
 
+// NewMatch creates new match from given info.
 func NewMatch(firstTeam, secondTeam, link string, stars int, t time.Time) Match {
 	return Match{
 		FirstTeam:  firstTeam,
@@ -38,6 +40,7 @@ func NewMatch(firstTeam, secondTeam, link string, stars int, t time.Time) Match 
 	}
 }
 
+// IsToday verifies that match will be today.
 func (m *Match) IsToday() bool {
 	return m.Time.Truncate(day).Equal(time.Now().Truncate(day))
 }
